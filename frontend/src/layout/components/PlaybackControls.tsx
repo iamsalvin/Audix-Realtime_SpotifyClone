@@ -9,17 +9,31 @@ import {
   SkipBack,
   SkipForward,
   Volume2,
+  AlignLeft,
+  ExternalLink,
+  Music,
+  Volume1,
+  VolumeX,
 } from "lucide-react";
 import DownloadButton from "@/components/DownloadButton";
 import { useEffect, useRef, useState } from "react";
 import { useActivityStore } from "@/stores/useActivityStore";
 import { usePremiumStore } from "@/stores/usePremiumStore";
 import { useChatStore } from "@/stores/useChatStore";
+import { Link } from "react-router-dom";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
-const formatTime = (seconds: number) => {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+const formatTime = (time: number) => {
+  if (isNaN(time)) return "0:00";
+  const minutes = Math.floor(time / 60);
+  const seconds = Math.floor(time % 60);
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
 export const PlaybackControls = () => {
@@ -32,14 +46,21 @@ export const PlaybackControls = () => {
     logPlayActivity,
     setShowPremiumPopup,
     pendingPlay,
+    setIsPlaying,
   } = usePlayerStore();
   const { fetchActivityData } = useActivityStore();
   const { premiumStatus } = usePremiumStore();
   const isPremium = premiumStatus?.isPremium || false;
+  const { openChat } = useChatStore();
 
-  const [volume, setVolume] = useState(75);
+  const [volume, setVolume] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [isVolumeChanging, setIsVolumeChanging] = useState(false);
+  const lastInteractionRef = useRef<number>(0);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Function to refresh activity data
@@ -50,143 +71,135 @@ export const PlaybackControls = () => {
     }, 500);
   };
 
+  // Debounce function for controls
+  const debounce = (func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  };
+
+  // Handle button clicks with debounce
+  const handlePlayPause = debounce(() => {
+    const now = Date.now();
+    if (now - lastInteractionRef.current < 300) return; // Prevent rapid clicks
+    lastInteractionRef.current = now;
+
+    if (!isPremium && !isPlaying) {
+      openChat();
+      return;
+    }
+    togglePlay();
+  }, 200);
+
+  const handleNext = debounce(() => {
+    const now = Date.now();
+    if (now - lastInteractionRef.current < 300) return;
+    lastInteractionRef.current = now;
+
+    if (!isPremium) {
+      openChat();
+      return;
+    }
+    playNext();
+  }, 200);
+
+  const handlePrevious = debounce(() => {
+    const now = Date.now();
+    if (now - lastInteractionRef.current < 300) return;
+    lastInteractionRef.current = now;
+
+    if (!isPremium) {
+      openChat();
+      return;
+    }
+    playPrevious();
+  }, 200);
+
+  // Audio event handlers
   useEffect(() => {
-    audioRef.current = document.querySelector("audio");
-
-    const audio = audioRef.current;
+    const audio = document.querySelector("audio");
     if (!audio) return;
+    audioRef.current = audio;
 
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration);
-
-    audio.addEventListener("timeupdate", updateTime);
-    audio.addEventListener("loadedmetadata", updateDuration);
-
-    const handleEnded = () => {
-      // Log the current song's play activity
-      logPlayActivity();
-      // Refresh activity data
-      refreshActivity();
-      usePlayerStore.setState({ isPlaying: false });
+    const handleTimeUpdate = () => {
+      if (!isSeeking && audio) {
+        setCurrentTime(audio.currentTime);
+      }
     };
 
+    const handleLoadedMetadata = () => {
+      if (audio) {
+        setDuration(audio.duration);
+        audio.volume = volume;
+      }
+    };
+
+    const handleEnded = () => {
+      logPlayActivity();
+      if (isPremium) {
+        playNext();
+      } else {
+        setIsPlaying(false);
+        openChat();
+      }
+    };
+
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("ended", handleEnded);
 
     return () => {
-      audio.removeEventListener("timeupdate", updateTime);
-      audio.removeEventListener("loadedmetadata", updateDuration);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [currentSong, logPlayActivity, refreshActivity]);
+  }, [
+    isSeeking,
+    volume,
+    isPremium,
+    logPlayActivity,
+    playNext,
+    setIsPlaying,
+    openChat,
+  ]);
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    // Convert volume from 0-100 scale to 0-1 scale that audio elements use
-    audio.volume = volume / 100;
-  }, [volume]);
-
+  // Handle seeking
   const handleSeek = (value: number[]) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = value[0];
+    if (!audioRef.current || !isPremium) return;
+
+    const newTime = value[0];
+    setCurrentTime(newTime);
+
+    if (!isSeeking) {
+      setIsSeeking(true);
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+      controlsTimeoutRef.current = setTimeout(() => {
+        audioRef.current!.currentTime = newTime;
+        setIsSeeking(false);
+      }, 200);
     }
   };
 
-  // Handler for next button that handles premium status
-  const handleNext = () => {
-    // For all users, log current play first
-    logPlayActivity();
+  // Handle volume changes
+  const handleVolumeChange = (value: number[]) => {
+    if (!audioRef.current) return;
 
-    if (isPremium) {
-      // For premium users, directly call playNext without checking premium status again
-      const { currentIndex, queue } = usePlayerStore.getState();
+    const newVolume = value[0];
+    setVolume(newVolume);
 
-      if (queue.length === 0) return;
-
-      let nextIndex = currentIndex + 1;
-      if (nextIndex >= queue.length) {
-        nextIndex = 0; // loop back to first song
+    if (!isVolumeChanging) {
+      setIsVolumeChanging(true);
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
       }
-
-      const nextSong = queue[nextIndex];
-
-      // Update socket activity
-      const socket = useChatStore.getState().socket;
-      if (socket?.auth) {
-        socket.emit("update_activity", {
-          userId: socket.auth.userId,
-          activity: `Playing ${nextSong.title} by ${nextSong.artist}`,
-        });
-      }
-
-      // Directly set state for premium users
-      usePlayerStore.setState({
-        currentSong: nextSong,
-        currentIndex: nextIndex,
-        isPlaying: true,
-        playStartTime: Date.now(),
-      });
-
-      // Refresh activity data
-      refreshActivity();
-    } else {
-      // For non-premium users, show popup
-      setShowPremiumPopup(true);
-      refreshActivity();
-    }
-  };
-
-  // Handler for previous button that handles premium status
-  const handlePrevious = () => {
-    // For all users, log current play first
-    logPlayActivity();
-
-    if (isPremium) {
-      // For premium users, directly call playPrevious without checking premium status again
-      const { currentIndex, queue } = usePlayerStore.getState();
-
-      if (queue.length === 0) return;
-
-      let prevIndex = currentIndex - 1;
-      if (prevIndex < 0) {
-        prevIndex = queue.length - 1; // loop to last song
-      }
-
-      const prevSong = queue[prevIndex];
-
-      // Update socket activity
-      const socket = useChatStore.getState().socket;
-      if (socket?.auth) {
-        socket.emit("update_activity", {
-          userId: socket.auth.userId,
-          activity: `Playing ${prevSong.title} by ${prevSong.artist}`,
-        });
-      }
-
-      // Directly set state for premium users
-      usePlayerStore.setState({
-        currentSong: prevSong,
-        currentIndex: prevIndex,
-        isPlaying: true,
-        playStartTime: Date.now(),
-      });
-
-      // Refresh activity data
-      refreshActivity();
-    } else {
-      // For non-premium users, show popup
-      setShowPremiumPopup(true);
-      refreshActivity();
-    }
-  };
-
-  // Handler for play/pause that ensures activity is updated
-  const handleTogglePlay = () => {
-    togglePlay();
-    if (!isPlaying) {
-      // If we're currently paused and about to play
-      refreshActivity();
+      controlsTimeoutRef.current = setTimeout(() => {
+        audioRef.current!.volume = newVolume;
+        setIsVolumeChanging(false);
+      }, 100);
     }
   };
 
@@ -201,19 +214,50 @@ export const PlaybackControls = () => {
         <div className="hidden sm:flex items-center gap-4 min-w-[180px] w-[30%]">
           {currentSong && (
             <>
-              <img
-                src={currentSong.imageUrl}
-                alt={currentSong.title}
-                className="w-14 h-14 object-cover rounded-md"
-              />
+              <div className="relative group">
+                <img
+                  src={currentSong.imageUrl}
+                  alt={currentSong.title}
+                  className="w-14 h-14 object-cover rounded-md"
+                />
+                {/* Link to song details overlay on hover */}
+                <Link
+                  to={`/songs/${currentSong._id}`}
+                  className="absolute inset-0 flex items-center justify-center bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity rounded-md"
+                >
+                  <ExternalLink className="h-6 w-6 text-white" />
+                </Link>
+              </div>
+
               <div className="flex-1 min-w-0">
-                <div className="font-medium truncate hover:underline cursor-pointer">
+                <Link
+                  to={`/songs/${currentSong._id}`}
+                  className="font-medium truncate hover:underline cursor-pointer"
+                >
                   {currentSong.title}
-                </div>
-                <div className="text-sm text-zinc-400 truncate hover:underline cursor-pointer">
+                </Link>
+                <div className="text-sm text-zinc-400 truncate">
                   {currentSong.artist}
                 </div>
               </div>
+
+              {/* Lyrics button */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={`/songs/${currentSong._id}`}
+                      className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800/30 rounded-full transition-colors relative"
+                    >
+                      <Music className="h-5 w-5" />
+                      <span className="absolute -top-1 -right-1 h-2 w-2 bg-emerald-500 rounded-full" />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>View lyrics</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </>
           )}
         </div>
@@ -225,6 +269,15 @@ export const PlaybackControls = () => {
             <span>{formatTime(currentTime)}</span>
             <span>/</span>
             <span>{formatTime(duration)}</span>
+            {/* Mobile lyrics button */}
+            {currentSong && (
+              <Link
+                to={`/songs/${currentSong._id}`}
+                className="ml-2 text-zinc-400 hover:text-white"
+              >
+                <Music className="h-4 w-4" />
+              </Link>
+            )}
           </div>
 
           <div className="flex items-center gap-4 sm:gap-6">
@@ -249,7 +302,7 @@ export const PlaybackControls = () => {
             <Button
               size="icon"
               className="bg-white hover:bg-white/80 text-black rounded-full h-8 w-8"
-              onClick={handleTogglePlay}
+              onClick={handlePlayPause}
               disabled={noSongSelected || hasPendingPlay}
             >
               {isPlaying ? (
@@ -294,7 +347,7 @@ export const PlaybackControls = () => {
               value={[currentTime]}
               max={duration}
               step={1}
-              className="w-full"
+              className="w-full cursor-pointer"
               onValueChange={handleSeek}
               disabled={hasPendingPlay}
             />
@@ -308,14 +361,22 @@ export const PlaybackControls = () => {
 
         {/* volume control */}
         <div className="hidden sm:flex items-center gap-2 min-w-[180px] w-[30%] justify-end">
-          <Volume2 className="h-5 w-5 text-zinc-400" />
-          <Slider
-            className="w-[120px]"
-            value={[volume]}
-            max={100}
-            step={1}
-            onValueChange={(value) => setVolume(value[0])}
-          />
+          <div className="flex items-center gap-2">
+            {volume === 0 ? (
+              <VolumeX className="h-5 w-5 text-zinc-400" />
+            ) : volume < 0.5 ? (
+              <Volume1 className="h-5 w-5 text-zinc-400" />
+            ) : (
+              <Volume2 className="h-5 w-5 text-zinc-400" />
+            )}
+            <Slider
+              className="w-[120px] cursor-pointer"
+              value={[volume]}
+              max={1}
+              step={0.01}
+              onValueChange={handleVolumeChange}
+            />
+          </div>
         </div>
       </div>
     </div>

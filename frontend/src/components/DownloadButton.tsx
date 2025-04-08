@@ -11,50 +11,61 @@ interface DownloadButtonProps {
   className?: string;
 }
 
-const DownloadButton = ({ song, variant = "icon", className = "" }: DownloadButtonProps) => {
+const DownloadButton = ({
+  song,
+  variant = "icon",
+  className = "",
+}: DownloadButtonProps) => {
   const { premiumStatus } = usePremiumStore();
   const [isDownloading, setIsDownloading] = useState(false);
-  
-  // Check if user is premium
+
+  // Check if user is premium - but still show button for all users
   const isPremium = premiumStatus?.isPremium || false;
-  
-  if (!isPremium) {
-    return null; // Don't show download button for non-premium users
-  }
-  
+
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering parent click events
-    
+
     try {
       setIsDownloading(true);
-      
+
+      // If not premium, show upgrade toast but still allow download
+      if (!isPremium) {
+        toast.success(
+          "Consider upgrading to Premium for higher quality downloads!",
+          {
+            duration: 3000,
+            icon: "⭐",
+          }
+        );
+      }
+
       // Create a link element
-      const link = document.createElement('a');
-      
+      const link = document.createElement("a");
+
       // Set the href to the song's audio URL
       link.href = song.audioUrl;
-      
+
       // Set the download attribute to the song's title
       link.download = `${song.title} - ${song.artist}.mp3`;
-      
+
       // Append the link to the document
       document.body.appendChild(link);
-      
+
       // Simulate a click on the link
       link.click();
-      
+
       // Remove the link from the document
       document.body.removeChild(link);
-      
-      toast.success('Download started!');
+
+      toast.success("Download started!");
     } catch (error) {
-      console.error('Download error:', error);
-      toast.error('Failed to download song');
+      console.error("Download error:", error);
+      toast.error("Failed to download song");
     } finally {
       setIsDownloading(false);
     }
   };
-  
+
   if (variant === "icon") {
     return (
       <Button
@@ -69,7 +80,7 @@ const DownloadButton = ({ song, variant = "icon", className = "" }: DownloadButt
       </Button>
     );
   }
-  
+
   return (
     <Button
       variant="outline"

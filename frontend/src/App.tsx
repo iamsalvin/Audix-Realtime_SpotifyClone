@@ -10,35 +10,43 @@ import AdminLoginPage from "./pages/admin-login/AdminLoginPage";
 import LikedSongsPage from "./pages/liked-songs/LikedSongsPage";
 import ActivityPage from "./pages/activity/ActivityPage";
 import PremiumPage from "./pages/premium/PremiumPage";
+import SearchPage from "./pages/search/SearchPage";
+import SongDetailsPage from "./pages/song/SongDetailsPage";
 
 import { Toaster } from "react-hot-toast";
 import NotFoundPage from "./pages/404/NotFoundPage";
 
 function App() {
-	return (
-		<>
-			<Routes>
-				<Route
-					path='/sso-callback'
-					element={<AuthenticateWithRedirectCallback signUpForceRedirectUrl={"/auth-callback"} />}
-				/>
-				<Route path='/auth-callback' element={<AuthCallbackPage />} />
-				<Route path='/admin' element={<AdminPage />} />
-				<Route path='/admin-login' element={<AdminLoginPage />} />
+  return (
+    <>
+      <Routes>
+        <Route
+          path="/sso-callback"
+          element={
+            <AuthenticateWithRedirectCallback
+              signUpForceRedirectUrl={"/auth-callback"}
+            />
+          }
+        />
+        <Route path="/auth-callback" element={<AuthCallbackPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin-login" element={<AdminLoginPage />} />
 
-				<Route element={<MainLayout />}>
-					<Route path='/' element={<HomePage />} />
-					<Route path='/chat' element={<ChatPage />} />
-					<Route path='/albums/:albumId' element={<AlbumPage />} />
-					<Route path='/liked-songs' element={<LikedSongsPage />} />
-					<Route path='/activity' element={<ActivityPage />} />
-					<Route path='/premium' element={<PremiumPage />} />
-					<Route path='*' element={<NotFoundPage />} />
-				</Route>
-			</Routes>
-			<Toaster />
-		</>
-	);
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/albums/:albumId" element={<AlbumPage />} />
+          <Route path="/liked-songs" element={<LikedSongsPage />} />
+          <Route path="/activity" element={<ActivityPage />} />
+          <Route path="/premium" element={<PremiumPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/songs/:songId" element={<SongDetailsPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+      </Routes>
+      <Toaster />
+    </>
+  );
 }
 
 export default App;

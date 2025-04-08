@@ -4,6 +4,7 @@ import LikeButton from "./LikeButton";
 import DownloadButton from "./DownloadButton";
 import { useLikedSongsStore } from "@/stores/useLikedSongsStore";
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface SongCardProps {
   song: Song;
@@ -12,14 +13,24 @@ interface SongCardProps {
 
 const SongCard = ({ song, showLikeButton = true }: SongCardProps) => {
   const { checkBulkLikeStatus } = useLikedSongsStore();
+  const navigate = useNavigate();
 
   // Check like status when card mounts
   useEffect(() => {
     checkBulkLikeStatus([song._id]);
   }, [song._id, checkBulkLikeStatus]);
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent navigation if clicking on control buttons
+    if ((e.target as HTMLElement).closest("button")) {
+      return;
+    }
+    navigate(`/songs/${song._id}`);
+  };
+
   return (
     <div
+      onClick={handleCardClick}
       className="bg-zinc-800/40 p-2 sm:p-4 rounded-md hover:bg-zinc-700/40 
       transition-all group cursor-pointer relative"
     >
@@ -32,24 +43,28 @@ const SongCard = ({ song, showLikeButton = true }: SongCardProps) => {
             group-hover:scale-105"
           />
         </div>
-        
+
         <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <PlayButton song={song} />
         </div>
-        
+
         {showLikeButton && (
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <LikeButton songId={song._id} showBackground={true} />
           </div>
         )}
-        
+
         <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <DownloadButton song={song} />
         </div>
       </div>
-      
-      <h3 className="text-xs sm:text-base font-medium mb-1 sm:mb-2 truncate">{song.title}</h3>
-      <p className="text-[10px] sm:text-sm text-zinc-400 truncate">{song.artist}</p>
+
+      <h3 className="text-xs sm:text-base font-medium mb-1 sm:mb-2 truncate">
+        {song.title}
+      </h3>
+      <p className="text-[10px] sm:text-sm text-zinc-400 truncate">
+        {song.artist}
+      </p>
     </div>
   );
 };

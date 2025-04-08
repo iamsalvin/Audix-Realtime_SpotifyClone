@@ -1,11 +1,14 @@
 import { Router } from "express";
-import { 
-  getAllSongs, 
-  getFeaturedSongs, 
-  getMadeForYouSongs, 
+import {
+  getAllSongs,
+  getFeaturedSongs,
+  getMadeForYouSongs,
   getTrendingSongs,
   getSongsByMood,
-  getMoods
+  getMoods,
+  searchSongs,
+  getSongById,
+  getSongLyrics,
 } from "../controller/song.controller.js";
 import { protectRoute, requireAdmin } from "../middleware/auth.middleware.js";
 
@@ -18,5 +21,8 @@ router.get("/trending", getTrendingSongs);
 router.get("/moods", getMoods);
 router.get("/moods/:mood", getSongsByMood);
 router.get("/by-mood", getSongsByMood);
+router.get("/search", searchSongs);
+router.get("/:id", getSongById);
+router.get("/:id/lyrics", getSongLyrics);
 
 export default router;
