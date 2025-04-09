@@ -5,6 +5,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import { axiosInstance } from "@/lib/axios";
+import { useDebounceClick } from "@/hooks/useDebounceClick";
 
 interface LikeButtonProps {
   songId: string;
@@ -70,6 +71,9 @@ const LikeButton = ({
       return;
     }
 
+    // Prevent multiple rapid clicks by checking if already loading
+    if (isLoading) return;
+
     setIsLoading(true);
 
     // Set local state for immediate UI feedback
@@ -97,16 +101,22 @@ const LikeButton = ({
       setLocalLiked(isLiked);
       toast.error("Failed to update like status");
     } finally {
-      setIsLoading(false);
+      // Add a small delay before allowing another like/unlike action
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 800);
     }
   };
 
+  // Use the debounce hook
+  const debouncedToggleLike = useDebounceClick(handleToggleLike, 200, 300);
+
   return (
     <button
-      onClick={handleToggleLike}
+      onClick={debouncedToggleLike}
       disabled={isLoading}
       className={cn(
-        "transition-transform duration-200 hover:scale-110",
+        "transition-transform duration-200 hover:scale-110 active:scale-95",
         showBackground && "bg-black/40 p-2 rounded-full",
         className
       )}

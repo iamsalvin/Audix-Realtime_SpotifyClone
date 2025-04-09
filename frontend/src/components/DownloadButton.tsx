@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { DebouncedButton } from "@/components/ui/debounced-button";
 import { usePremiumStore } from "@/stores/usePremiumStore";
 import { Song } from "@/types";
 import { Download } from "lucide-react";
@@ -24,6 +24,9 @@ const DownloadButton = ({
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering parent click events
+
+    // If already downloading, prevent multiple attempts
+    if (isDownloading) return;
 
     try {
       setIsDownloading(true);
@@ -62,35 +65,42 @@ const DownloadButton = ({
       console.error("Download error:", error);
       toast.error("Failed to download song");
     } finally {
-      setIsDownloading(false);
+      // Set a small delay before allowing another download
+      setTimeout(() => {
+        setIsDownloading(false);
+      }, 1000);
     }
   };
 
   if (variant === "icon") {
     return (
-      <Button
+      <DebouncedButton
         size="icon"
         variant="ghost"
-        onClick={handleDownload}
+        onClickDebounced={handleDownload}
         disabled={isDownloading}
         className={`text-zinc-400 hover:text-white ${className}`}
         title="Download song"
+        debounceDelay={300}
+        threshold={500}
       >
         <Download className="h-5 w-5" />
-      </Button>
+      </DebouncedButton>
     );
   }
 
   return (
-    <Button
+    <DebouncedButton
       variant="outline"
-      onClick={handleDownload}
+      onClickDebounced={handleDownload}
       disabled={isDownloading}
       className={`flex items-center gap-2 ${className}`}
+      debounceDelay={300}
+      threshold={500}
     >
       <Download className="h-4 w-4" />
       {isDownloading ? "Downloading..." : "Download"}
-    </Button>
+    </DebouncedButton>
   );
 };
 

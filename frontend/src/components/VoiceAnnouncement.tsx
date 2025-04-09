@@ -1,19 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 
 interface VoiceAnnouncementProps {
-  text: string;
+  text: string; // Text to be announced
   duration?: number; // Duration in milliseconds
   audioUrl?: string; // URL to the custom audio file
+  onEnd?: () => void; // Callback for when announcement ends
 }
 
+/**
+ * Component for playing audio announcements in the app.
+ * Currently uses a provided audio file instead of text-to-speech.
+ */
 const VoiceAnnouncement = ({
-  text,
   duration = 5000,
   audioUrl = "/audio/Voice for Audix.mp3", // Default audio file path
+  onEnd,
 }: VoiceAnnouncementProps) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeoutRef = useRef<number | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -24,20 +28,25 @@ const VoiceAnnouncement = ({
     audioRef.current.volume = 1.0;
 
     // Add event listeners
-    audioRef.current.addEventListener("play", () => {
+    const handlePlay = () => {
       console.log("Audio started playing");
-      setIsPlaying(true);
-    });
+    };
 
-    audioRef.current.addEventListener("ended", () => {
+    const handleEnded = () => {
       console.log("Audio finished playing");
-      setIsPlaying(false);
-    });
+      if (onEnd) onEnd();
+    };
 
-    audioRef.current.addEventListener("error", (e) => {
+    const handleError = (e: Event) => {
       console.error("Error playing audio:", e);
       setError("Failed to play audio file");
-    });
+    };
+
+    if (audioRef.current) {
+      audioRef.current.addEventListener("play", handlePlay);
+      audioRef.current.addEventListener("ended", handleEnded);
+      audioRef.current.addEventListener("error", handleError);
+    }
 
     // Play the audio
     audioRef.current.play().catch((error) => {
@@ -51,7 +60,7 @@ const VoiceAnnouncement = ({
         console.log("Stopping audio after duration timeout");
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-        setIsPlaying(false);
+        if (onEnd) onEnd();
       }
     }, duration);
 
@@ -63,12 +72,12 @@ const VoiceAnnouncement = ({
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-        audioRef.current.removeEventListener("play", () => {});
-        audioRef.current.removeEventListener("ended", () => {});
-        audioRef.current.removeEventListener("error", () => {});
+        audioRef.current.removeEventListener("play", handlePlay);
+        audioRef.current.removeEventListener("ended", handleEnded);
+        audioRef.current.removeEventListener("error", handleError);
       }
     };
-  }, [audioUrl, duration]);
+  }, [audioUrl, duration, onEnd]);
 
   // For debugging purposes
   if (error) {

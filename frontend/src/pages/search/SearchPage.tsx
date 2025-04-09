@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Topbar from "@/components/Topbar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { Search, X, Music, AlertCircle } from "lucide-react";
+import { Search, X, Music } from "lucide-react";
 import SongCard from "@/components/SongCard";
 import { useSearchStore } from "@/stores/useSearchStore";
 import { useMusicStore } from "@/stores/useMusicStore";

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
+import { DebouncedButton } from "@/components/ui/debounced-button";
 import { X, Crown, Music, Volume2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import VoiceAnnouncement from "./VoiceAnnouncement";
@@ -18,6 +18,7 @@ const PremiumPopup = ({
 }: PremiumPopupProps) => {
   const [timeLeft, setTimeLeft] = useState(autoCloseTime);
   const [showVoiceAnnouncement, setShowVoiceAnnouncement] = useState(true);
+  const [isActionInProgress, setIsActionInProgress] = useState(false);
   const navigate = useNavigate();
   const wasPlayingRef = useRef(false);
   const musicResumedRef = useRef(false);
@@ -111,6 +112,10 @@ const PremiumPopup = ({
   }, [autoCloseTime, onClose, onContinue, togglePlay]);
 
   const handleUpgrade = () => {
+    // Prevent multiple clicks
+    if (isActionInProgress) return;
+    setIsActionInProgress(true);
+
     console.log("Upgrade button clicked");
 
     // Set closing flag to prevent music from resuming in cleanup
@@ -133,6 +138,10 @@ const PremiumPopup = ({
   };
 
   const handleContinue = () => {
+    // Prevent multiple clicks
+    if (isActionInProgress) return;
+    setIsActionInProgress(true);
+
     console.log("Continue button clicked");
 
     // Set closing flag to prevent music from resuming in cleanup
@@ -155,6 +164,10 @@ const PremiumPopup = ({
   };
 
   const handleClose = () => {
+    // Prevent multiple clicks
+    if (isActionInProgress) return;
+    setIsActionInProgress(true);
+
     console.log("Close button clicked");
 
     // Set closing flag to prevent music from resuming in cleanup
@@ -185,12 +198,16 @@ const PremiumPopup = ({
         />
       )}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl max-w-md w-full p-6 relative">
-        <button
+        <DebouncedButton
           onClick={handleClose}
+          variant="ghost"
+          size="icon"
           className="absolute top-4 right-4 text-zinc-400 hover:text-white"
+          debounceDelay={300}
+          disabled={isActionInProgress}
         >
           <X size={20} />
-        </button>
+        </DebouncedButton>
 
         <div className="flex flex-col items-center text-center mb-6">
           <div className="bg-gradient-to-r from-amber-500 to-yellow-300 p-3 rounded-full mb-4">
@@ -214,20 +231,26 @@ const PremiumPopup = ({
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full">
-            <Button
-              onClick={handleUpgrade}
+            <DebouncedButton
+              onClickDebounced={handleUpgrade}
               className="bg-emerald-600 hover:bg-emerald-700 flex-1"
+              debounceDelay={400}
+              threshold={500}
+              disabled={isActionInProgress}
             >
               Upgrade Now
-            </Button>
+            </DebouncedButton>
 
-            <Button
-              onClick={handleContinue}
+            <DebouncedButton
+              onClickDebounced={handleContinue}
               variant="outline"
               className="border-zinc-700 flex-1"
+              debounceDelay={400}
+              threshold={500}
+              disabled={isActionInProgress}
             >
               Continue ({timeLeft}s)
-            </Button>
+            </DebouncedButton>
           </div>
         </div>
       </div>

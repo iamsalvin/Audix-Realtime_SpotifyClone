@@ -9,7 +9,6 @@ import {
   SkipBack,
   SkipForward,
   Volume2,
-  AlignLeft,
   ExternalLink,
   Music,
   Volume1,
@@ -17,17 +16,14 @@ import {
 } from "lucide-react";
 import DownloadButton from "@/components/DownloadButton";
 import { useEffect, useRef, useState } from "react";
-import { useActivityStore } from "@/stores/useActivityStore";
 import { usePremiumStore } from "@/stores/usePremiumStore";
-import { useChatStore } from "@/stores/useChatStore";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 
 const formatTime = (time: number) => {
   if (isNaN(time)) return "0:00";
@@ -44,14 +40,11 @@ export const PlaybackControls = () => {
     playNext,
     playPrevious,
     logPlayActivity,
-    setShowPremiumPopup,
     pendingPlay,
-    setIsPlaying,
   } = usePlayerStore();
-  const { fetchActivityData } = useActivityStore();
   const { premiumStatus } = usePremiumStore();
   const isPremium = premiumStatus?.isPremium || false;
-  const { openChat } = useChatStore();
+  const navigate = useNavigate();
 
   const [volume, setVolume] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
@@ -63,14 +56,6 @@ export const PlaybackControls = () => {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Function to refresh activity data
-  const refreshActivity = () => {
-    setTimeout(() => {
-      console.log("Refreshing activity data from PlaybackControls");
-      fetchActivityData(true);
-    }, 500);
-  };
-
   // Debounce function for controls
   const debounce = (func: Function, wait: number) => {
     let timeout: NodeJS.Timeout;
@@ -80,6 +65,11 @@ export const PlaybackControls = () => {
     };
   };
 
+  // Navigate to chat for non-premium users
+  const navigateToChat = () => {
+    navigate("/chat");
+  };
+
   // Handle button clicks with debounce
   const handlePlayPause = debounce(() => {
     const now = Date.now();
@@ -87,7 +77,8 @@ export const PlaybackControls = () => {
     lastInteractionRef.current = now;
 
     if (!isPremium && !isPlaying) {
-      openChat();
+      // Navigate to chat page if user is not premium
+      navigateToChat();
       return;
     }
     togglePlay();
@@ -99,7 +90,7 @@ export const PlaybackControls = () => {
     lastInteractionRef.current = now;
 
     if (!isPremium) {
-      openChat();
+      navigateToChat();
       return;
     }
     playNext();
@@ -111,7 +102,7 @@ export const PlaybackControls = () => {
     lastInteractionRef.current = now;
 
     if (!isPremium) {
-      openChat();
+      navigateToChat();
       return;
     }
     playPrevious();
@@ -141,8 +132,9 @@ export const PlaybackControls = () => {
       if (isPremium) {
         playNext();
       } else {
-        setIsPlaying(false);
-        openChat();
+        // Update player state directly
+        usePlayerStore.setState({ isPlaying: false });
+        navigateToChat();
       }
     };
 
@@ -155,15 +147,7 @@ export const PlaybackControls = () => {
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [
-    isSeeking,
-    volume,
-    isPremium,
-    logPlayActivity,
-    playNext,
-    setIsPlaying,
-    openChat,
-  ]);
+  }, [isSeeking, volume, isPremium, logPlayActivity, playNext, navigateToChat]);
 
   // Handle seeking
   const handleSeek = (value: number[]) => {
