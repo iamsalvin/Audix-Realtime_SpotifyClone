@@ -32,7 +32,12 @@ initializeSocket(httpServer);
 
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001"],
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "https://audix-web.onrender.com",
+      "https://audix-api.onrender.com",
+    ],
     credentials: true,
   })
 );

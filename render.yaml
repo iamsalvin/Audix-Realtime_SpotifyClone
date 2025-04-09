@@ -25,14 +25,13 @@ services:
       - key: ADMIN_EMAIL
         sync: false
 
-  # Frontend service
+  # Frontend service (updated for SPA routing)
   - type: web
     name: audix-web
-    env: node
-    buildCommand: npm install --prefix frontend && npm run build --prefix frontend
-    startCommand: cd frontend && npx serve -s dist
-    envVars:
-      - key: VITE_CLERK_PUBLISHABLE_KEY
-        sync: false
-      - key: VITE_API_URL
-        value: https://audix-api.onrender.com/api
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
