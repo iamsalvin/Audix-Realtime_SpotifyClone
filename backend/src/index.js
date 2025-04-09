@@ -35,8 +35,7 @@ app.use(
     origin: [
       "http://localhost:3000",
       "http://localhost:3001",
-      "https://audix-web.onrender.com",
-      "https://audix-api.onrender.com",
+      "https://audix-realtime.onrender.com",
     ],
     credentials: true,
   })
