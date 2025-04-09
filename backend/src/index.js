@@ -34,7 +34,7 @@ initializeSocket(httpServer);
 app.use(
   cors({
     origin: [
-      "https://audix-frontend.onrender.com",
+      "http://localhost:3000",
       "https://audix-web.onrender.com",
       process.env.FRONTEND_URL,
     ].filter(Boolean),
