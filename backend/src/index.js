@@ -10,7 +10,7 @@ import cron from "node-cron";
 
 import { initializeSocket } from "./lib/socket.js";
 
-import { connectDB } from "./config/db.js";
+import { connectDB } from "./lib/db.js";
 import userRoutes from "./routes/user.route.js";
 import adminRoutes from "./routes/admin.route.js";
 import authRoutes from "./routes/auth.route.js";
@@ -22,22 +22,17 @@ import userActivityRoutes from "./routes/userActivity.route.js";
 import premiumRoutes from "./routes/premium.route.js";
 
 dotenv.config();
-connectDB();
 
 const __dirname = path.resolve();
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT;
 
 const httpServer = createServer(app);
 initializeSocket(httpServer);
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "https://audix-web.onrender.com",
-      process.env.FRONTEND_URL,
-    ].filter(Boolean),
+    origin: ["http://localhost:3000", "http://localhost:3001"],
     credentials: true,
   })
 );
@@ -104,4 +99,5 @@ app.use((err, req, res, next) => {
 
 httpServer.listen(PORT, () => {
   console.log("Server is running on port " + PORT);
+  connectDB();
 });
