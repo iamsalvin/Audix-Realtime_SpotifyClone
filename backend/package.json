@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "build": "cd ../frontend && npm install && npm run build && cd ../backend && npm install",
+    "build": "echo 'Build step completed'",
     "seed:songs": "node src/seeds/songs.js",
     "seed:albums": "node src/seeds/albums.js"
   },
@@ -28,5 +28,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.7"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

@@ -4,20 +4,6 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
-  build: {
-    outDir: "dist",
-    emptyOutDir: true,
-    // Ignore TypeScript errors during production build
-    rollupOptions: {
-      onwarn(warning, warn) {
-        // Ignore TypeScript warnings
-        if (warning.code === "TS" || warning.message.includes("TypeScript")) {
-          return;
-        }
-        warn(warning);
-      },
-    },
-  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -25,5 +11,29 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    proxy: {
+      "/api": {
+        target: process.env.VITE_API_URL || "http://localhost:8000",
+        changeOrigin: true,
+      },
+    },
+  },
+  build: {
+    outDir: "dist",
+    sourcemap: process.env.NODE_ENV === "development",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom"],
+          router: ["react-router-dom"],
+          ui: [
+            "@radix-ui/react-slot",
+            "@radix-ui/react-icons",
+            "lucide-react",
+            "class-variance-authority",
+          ],
+        },
+      },
+    },
   },
 });

@@ -7,10 +7,10 @@ import cors from "cors";
 import fs from "fs";
 import { createServer } from "http";
 import cron from "node-cron";
-import { Server } from "socket.io";
-import { fileURLToPath } from "url";
-import config from "./config/index.js";
-import connectDB from "./config/db.js";
+
+import { initializeSocket } from "./lib/socket.js";
+
+import { connectDB } from "./config/db.js";
 import userRoutes from "./routes/user.route.js";
 import adminRoutes from "./routes/admin.route.js";
 import authRoutes from "./routes/auth.route.js";
@@ -20,24 +20,42 @@ import statRoutes from "./routes/stat.route.js";
 import likedSongRoutes from "./routes/likedSong.route.js";
 import userActivityRoutes from "./routes/userActivity.route.js";
 import premiumRoutes from "./routes/premium.route.js";
-import { setupSocketHandlers } from "./socket/handlers.js";
 
 dotenv.config();
+connectDB();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+const __dirname = path.resolve();
 const app = express();
-const httpServer = createServer(app);
+const PORT = process.env.PORT || 8000;
 
-// Middleware
-app.use(cors(config.cors));
-app.use(express.json());
-app.use(clerkMiddleware());
+const httpServer = createServer(app);
+initializeSocket(httpServer);
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "https://audix-web.onrender.com",
+      process.env.FRONTEND_URL,
+    ].filter(Boolean),
+    credentials: true,
+  })
+);
+
+app.use(express.json()); // to parse req.body
+app.use(clerkMiddleware()); // this will add auth to req obj => req.auth
 app.use(
   fileUpload({
     useTempFiles: true,
-    tempFileDir: "/tmp/",
+    tempFileDir: path.join(__dirname, "tmp"),
+    createParentPath: true,
+    debug: true, // Enable debug mode for better error logging
+    abortOnLimit: true, // Return 413 when limit is reached
+    responseOnLimit: "File size limit has been reached (50MB maximum)",
+    limits: {
+      fileSize: 50 * 1024 * 1024, // 50MB max file size for audio files
+    },
+    uploadTimeout: 120000, // 2 minute timeout for uploads
   })
 );
 
@@ -57,7 +75,6 @@ cron.schedule("0 * * * *", () => {
   }
 });
 
-// API Routes
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
@@ -68,29 +85,23 @@ app.use("/api/liked-songs", likedSongRoutes);
 app.use("/api/activity", userActivityRoutes);
 app.use("/api/premium", premiumRoutes);
 
-// Serve static files from frontend build
 if (process.env.NODE_ENV === "production") {
-  const frontendBuildPath = path.join(__dirname, "../../frontend/dist");
-  app.use(express.static(frontendBuildPath));
-
-  // Handle client-side routing
+  app.use(express.static(path.join(__dirname, "../frontend/dist")));
   app.get("*", (req, res) => {
-    res.sendFile(path.join(frontendBuildPath, "index.html"));
+    res.sendFile(path.resolve(__dirname, "../frontend", "dist", "index.html"));
   });
 }
 
-// Socket.io setup
-const io = new Server(httpServer, {
-  cors: config.cors,
+// error handler
+app.use((err, req, res, next) => {
+  res.status(500).json({
+    message:
+      process.env.NODE_ENV === "production"
+        ? "Internal server error"
+        : err.message,
+  });
 });
 
-setupSocketHandlers(io);
-
-// Connect to MongoDB
-connectDB();
-
-// Start server
-const PORT = config.port;
 httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log("Server is running on port " + PORT);
 });
