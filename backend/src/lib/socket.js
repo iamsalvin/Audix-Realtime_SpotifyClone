@@ -4,7 +4,7 @@ import { Message } from "../models/message.model.js";
 export const initializeSocket = (server) => {
 	const io = new Server(server, {
 		cors: {
-			origin: "https://audix-frontend.onrender.com",
+			origin: "http://localhost:3000",
 			credentials: true,
 		},
 	});
