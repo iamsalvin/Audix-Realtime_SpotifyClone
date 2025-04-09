@@ -3,43 +3,36 @@ services:
   - type: web
     name: audix-api
     env: node
-    region: oregon
     plan: free
-    buildCommand: cd backend && npm install && npm run build
-    startCommand: cd backend && npm start
-    healthCheckPath: /api/songs
+    repo: https://github.com/iamsalvin/Audix-Realtime_SpotifyClone.git
+    branch: master
+    root: backend
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 8000
-      - key: MONGODB_URI
-        sync: false
-      - key: CLERK_SECRET_KEY
-        sync: false
-      - key: CLOUDINARY_CLOUD_NAME
-        sync: false
-      - key: CLOUDINARY_API_KEY
-        sync: false
-      - key: CLOUDINARY_API_SECRET
-        sync: false
-      - key: FRONTEND_URL
-        value: https://audix-web.onrender.com
+        value: 10000
+    healthCheckPath: /api/health
 
-  # Frontend static site
+  # Frontend app as a static site
   - type: web
-    name: audix-web
+    name: audix-frontend
     env: static
-    region: oregon
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
-    pullRequestPreviewsEnabled: true
+    buildCommand: cd ../frontend && npm install && npm run build
+    staticPublishPath: ../frontend/dist
+    repo: https://github.com/iamsalvin/Audix-Realtime_SpotifyClone.git
+    branch: master
+    root: backend # We use backend as root but build from frontend dir
+    envVars:
+      - key: NODE_ENV
+        value: production
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
-    envVars:
-      - key: VITE_API_URL
-        value: https://audix-api.onrender.com
-      - key: VITE_CLERK_PUBLISHABLE_KEY
-        sync: false
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache

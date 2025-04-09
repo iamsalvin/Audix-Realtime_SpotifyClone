@@ -46,7 +46,6 @@ export const PlaybackControls = () => {
     logPlayActivity,
     setShowPremiumPopup,
     pendingPlay,
-    setIsPlaying,
   } = usePlayerStore();
   const { fetchActivityData } = useActivityStore();
   const { premiumStatus } = usePremiumStore();
@@ -141,7 +140,7 @@ export const PlaybackControls = () => {
       if (isPremium) {
         playNext();
       } else {
-        setIsPlaying(false);
+        usePlayerStore.setState({ isPlaying: false });
         openChat();
       }
     };
@@ -155,15 +154,7 @@ export const PlaybackControls = () => {
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [
-    isSeeking,
-    volume,
-    isPremium,
-    logPlayActivity,
-    playNext,
-    setIsPlaying,
-    openChat,
-  ]);
+  }, [isSeeking, volume, isPremium, logPlayActivity, playNext, openChat]);
 
   // Handle seeking
   const handleSeek = (value: number[]) => {
