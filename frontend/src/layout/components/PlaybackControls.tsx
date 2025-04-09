@@ -20,7 +20,7 @@ import { useEffect, useRef, useState } from "react";
 import { useActivityStore } from "@/stores/useActivityStore";
 import { usePremiumStore } from "@/stores/usePremiumStore";
 import { useChatStore } from "@/stores/useChatStore";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   Tooltip,
   TooltipContent,
@@ -37,7 +37,6 @@ const formatTime = (time: number) => {
 };
 
 export const PlaybackControls = () => {
-  const navigate = useNavigate();
   const {
     currentSong,
     isPlaying,
@@ -47,11 +46,12 @@ export const PlaybackControls = () => {
     logPlayActivity,
     setShowPremiumPopup,
     pendingPlay,
+    setIsPlaying,
   } = usePlayerStore();
   const { fetchActivityData } = useActivityStore();
   const { premiumStatus } = usePremiumStore();
   const isPremium = premiumStatus?.isPremium || false;
-  const chatStore = useChatStore();
+  const { openChat } = useChatStore();
 
   const [volume, setVolume] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
@@ -71,14 +71,6 @@ export const PlaybackControls = () => {
     }, 500);
   };
 
-  // Function to handle non-premium user actions
-  const handleNonPremiumAction = () => {
-    // Use setShowPremiumPopup instead of openChat which doesn't exist
-    setShowPremiumPopup(true);
-    // Alternatively navigate to chat page
-    // navigate("/chat");
-  };
-
   // Debounce function for controls
   const debounce = (func: Function, wait: number) => {
     let timeout: NodeJS.Timeout;
@@ -95,7 +87,7 @@ export const PlaybackControls = () => {
     lastInteractionRef.current = now;
 
     if (!isPremium && !isPlaying) {
-      handleNonPremiumAction();
+      openChat();
       return;
     }
     togglePlay();
@@ -107,7 +99,7 @@ export const PlaybackControls = () => {
     lastInteractionRef.current = now;
 
     if (!isPremium) {
-      handleNonPremiumAction();
+      openChat();
       return;
     }
     playNext();
@@ -119,7 +111,7 @@ export const PlaybackControls = () => {
     lastInteractionRef.current = now;
 
     if (!isPremium) {
-      handleNonPremiumAction();
+      openChat();
       return;
     }
     playPrevious();
@@ -149,8 +141,8 @@ export const PlaybackControls = () => {
       if (isPremium) {
         playNext();
       } else {
-        usePlayerStore.setState({ isPlaying: false });
-        handleNonPremiumAction();
+        setIsPlaying(false);
+        openChat();
       }
     };
 
@@ -163,7 +155,15 @@ export const PlaybackControls = () => {
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [isSeeking, volume, isPremium, logPlayActivity, playNext]);
+  }, [
+    isSeeking,
+    volume,
+    isPremium,
+    logPlayActivity,
+    playNext,
+    setIsPlaying,
+    openChat,
+  ]);
 
   // Handle seeking
   const handleSeek = (value: number[]) => {

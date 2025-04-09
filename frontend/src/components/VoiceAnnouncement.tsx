@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
 interface VoiceAnnouncementProps {
-  /** Text to be announced (for future text-to-speech implementation) */
   text: string;
   duration?: number; // Duration in milliseconds
   audioUrl?: string; // URL to the custom audio file
