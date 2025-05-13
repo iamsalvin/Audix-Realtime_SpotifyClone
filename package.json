@@ -21,7 +21,6 @@
   },
   "homepage": "https://github.com/iamsalvin/Audix-Realtime_SpotifyClone#readme",
   "dependencies": {
-    "cross-env": "^7.0.3",
-    "fs-extra": "^11.3.0"
+    "cross-env": "^7.0.3"
   }
 }

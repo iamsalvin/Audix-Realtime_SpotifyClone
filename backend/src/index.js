@@ -94,6 +94,9 @@ if (process.env.NODE_ENV === "production") {
     path.join(__dirname, "frontend/dist"),
     path.join(process.cwd(), "frontend/dist"),
     path.join(process.cwd(), "../frontend/dist"),
+    path.join(__dirname, "../frontend/frontend/dist"), // Path after our post-build script
+    path.join(__dirname, "frontend/frontend/dist"), // Alternate path
+    path.join(process.cwd(), "backend/frontend/dist"), // Path from post-build script
   ];
 
   let frontendPath = null;
@@ -107,7 +110,7 @@ if (process.env.NODE_ENV === "production") {
         break;
       }
     } catch (err) {
-      console.log("Path not found:", pathToTry);
+      console.log("Path check error:", pathToTry, err.message);
     }
   }
 
@@ -118,6 +121,17 @@ if (process.env.NODE_ENV === "production") {
     });
   } else {
     console.error("Could not find frontend build directory!");
+    // List all directories for debugging
+    possiblePaths.forEach((dir) => {
+      const parentDir = path.dirname(dir);
+      try {
+        if (fs.existsSync(parentDir)) {
+          console.log(`Contents of ${parentDir}:`, fs.readdirSync(parentDir));
+        }
+      } catch (e) {
+        console.log(`Could not read ${parentDir}:`, e.message);
+      }
+    });
   }
 }
 
