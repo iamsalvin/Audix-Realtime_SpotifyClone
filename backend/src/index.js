@@ -87,11 +87,38 @@ app.use("/api/premium", premiumRoutes);
 app.use("/api/payments", paymentRoutes);
 
 if (process.env.NODE_ENV === "production") {
-  const frontendPath = path.join(__dirname, "../../frontend/dist");
-  app.use(express.static(frontendPath));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(frontendPath, "index.html"));
-  });
+  // Try multiple possible paths to find the frontend build
+  const possiblePaths = [
+    path.join(__dirname, "../../frontend/dist"),
+    path.join(__dirname, "../frontend/dist"),
+    path.join(__dirname, "frontend/dist"),
+    path.join(process.cwd(), "frontend/dist"),
+    path.join(process.cwd(), "../frontend/dist"),
+  ];
+
+  let frontendPath = null;
+
+  // Find the first path that exists
+  for (const pathToTry of possiblePaths) {
+    try {
+      if (fs.existsSync(pathToTry)) {
+        frontendPath = pathToTry;
+        console.log("Found frontend build at:", frontendPath);
+        break;
+      }
+    } catch (err) {
+      console.log("Path not found:", pathToTry);
+    }
+  }
+
+  if (frontendPath) {
+    app.use(express.static(frontendPath));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(frontendPath, "index.html"));
+    });
+  } else {
+    console.error("Could not find frontend build directory!");
+  }
 }
 
 // error handler

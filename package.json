@@ -4,8 +4,9 @@
   "description": "Audix is a full-featured music streaming platform that emulates Spotify's core functionality with real-time interactive features. The platform offers a premium subscription model, music playback, user activity tracking, and a social component with real-time chat and notifications.",
   "main": "index.js",
   "scripts": {
-    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
-    "start": "npm run start --prefix backend"
+    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend && npm run post-build",
+    "post-build": "node scripts/post-build.js",
+    "start": "cross-env NODE_ENV=production npm run start --prefix backend"
   },
   "repository": {
     "type": "git",
@@ -18,5 +19,9 @@
   "bugs": {
     "url": "https://github.com/iamsalvin/Audix-Realtime_SpotifyClone/issues"
   },
-  "homepage": "https://github.com/iamsalvin/Audix-Realtime_SpotifyClone#readme"
+  "homepage": "https://github.com/iamsalvin/Audix-Realtime_SpotifyClone#readme",
+  "dependencies": {
+    "cross-env": "^7.0.3",
+    "fs-extra": "^11.3.0"
+  }
 }
