@@ -50,7 +50,12 @@ const DashboardStats = () => {
           }
         } catch (err) {
           // Silent failure, just log to console
-          console.log(`Failed endpoint ${endpoint}:`, err.message);
+          console.log(
+            `Failed endpoint ${endpoint}:`,
+            err && typeof err === "object" && "message" in err
+              ? err.message
+              : "Unknown error"
+          );
         }
       }
 
