@@ -1,7 +1,7 @@
 import { DebouncedButton } from "@/components/ui/debounced-button";
 import { usePremiumStore } from "@/stores/usePremiumStore";
 import { Song } from "@/types";
-import { Download } from "lucide-react";
+import { Download, Lock } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -19,7 +19,7 @@ const DownloadButton = ({
   const { premiumStatus } = usePremiumStore();
   const [isDownloading, setIsDownloading] = useState(false);
 
-  // Check if user is premium - but still show button for all users
+  // Check if user is premium
   const isPremium = premiumStatus?.isPremium || false;
 
   const handleDownload = async (e: React.MouseEvent) => {
@@ -28,19 +28,20 @@ const DownloadButton = ({
     // If already downloading, prevent multiple attempts
     if (isDownloading) return;
 
+    // If not premium, show upgrade message and don't allow download
+    if (!isPremium) {
+      toast.error(
+        "Downloading songs requires a premium subscription. Please upgrade to premium!",
+        {
+          duration: 4000,
+          icon: "🔒",
+        }
+      );
+      return;
+    }
+
     try {
       setIsDownloading(true);
-
-      // If not premium, show upgrade toast but still allow download
-      if (!isPremium) {
-        toast.success(
-          "Consider upgrading to Premium for higher quality downloads!",
-          {
-            duration: 3000,
-            icon: "⭐",
-          }
-        );
-      }
 
       // Create a link element
       const link = document.createElement("a");
@@ -79,27 +80,44 @@ const DownloadButton = ({
         variant="ghost"
         onClickDebounced={handleDownload}
         disabled={isDownloading}
-        className={`text-zinc-400 hover:text-white ${className}`}
-        title="Download song"
+        className={`${
+          isPremium ? "text-zinc-400 hover:text-white" : "text-zinc-500"
+        } ${className}`}
+        title={isPremium ? "Download song" : "Premium users only"}
         debounceDelay={300}
         threshold={500}
       >
-        <Download className="h-5 w-5" />
+        {isPremium ? (
+          <Download className="h-5 w-5" />
+        ) : (
+          <Lock className="h-5 w-5" />
+        )}
       </DebouncedButton>
     );
   }
 
   return (
     <DebouncedButton
-      variant="outline"
+      variant={isPremium ? "outline" : "secondary"}
       onClickDebounced={handleDownload}
       disabled={isDownloading}
-      className={`flex items-center gap-2 ${className}`}
+      className={`flex items-center gap-2 ${className} ${
+        !isPremium ? "bg-zinc-800 text-zinc-500" : ""
+      }`}
       debounceDelay={300}
       threshold={500}
     >
-      <Download className="h-4 w-4" />
-      {isDownloading ? "Downloading..." : "Download"}
+      {isPremium ? (
+        <>
+          <Download className="h-4 w-4" />
+          {isDownloading ? "Downloading..." : "Download"}
+        </>
+      ) : (
+        <>
+          <Lock className="h-4 w-4" />
+          Premium Only
+        </>
+      )}
     </DebouncedButton>
   );
 };

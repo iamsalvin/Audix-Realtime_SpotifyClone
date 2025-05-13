@@ -1,6 +1,7 @@
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useEffect, useRef } from "react";
 import { useActivityStore } from "@/stores/useActivityStore";
+import { usePremiumStore } from "@/stores/usePremiumStore";
 
 const AudioPlayer = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -10,6 +11,8 @@ const AudioPlayer = () => {
   const { currentSong, isPlaying, playNext, logPlayActivity } =
     usePlayerStore();
   const { fetchActivityData } = useActivityStore();
+  const { premiumStatus } = usePremiumStore();
+  const isPremium = premiumStatus?.isPremium || false;
 
   // handle play/pause logic with retry mechanism
   useEffect(() => {

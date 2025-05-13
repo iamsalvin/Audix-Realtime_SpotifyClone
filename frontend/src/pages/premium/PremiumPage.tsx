@@ -2,17 +2,68 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePremiumStore } from "@/stores/usePremiumStore";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Crown, Check, CreditCard, ArrowLeft } from "lucide-react";
+import { Crown, Check, ArrowLeft, AlertCircle } from "lucide-react";
 import Topbar from "@/components/Topbar";
 import toast from "react-hot-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import RazorpayCheckout from "@/components/RazorpayCheckout";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+// Define plan types and pricing
+const PLANS = [
+  {
+    id: "basic",
+    name: "Basic",
+    price: "₹99",
+    period: "1 Month",
+    features: ["Ad-free music", "Unlimited skips", "Download up to 100 songs"],
+  },
+  {
+    id: "standard",
+    name: "Standard",
+    price: "₹149",
+    period: "6 Months",
+    features: [
+      "Ad-free music",
+      "Unlimited skips",
+      "High-quality audio",
+      "Download up to 100 songs",
+    ],
+  },
+  {
+    id: "premium",
+    name: "Premium",
+    price: "₹199",
+    period: "1 Year",
+    features: [
+      "Ad-free music",
+      "Unlimited skips",
+      "High-quality audio",
+      "Download up to 500 songs",
+      "Early access to new features",
+    ],
+  },
+];
 
 const PremiumPage = () => {
   const navigate = useNavigate();
-  const { upgradeToPremium, premiumStatus, isLoading } = usePremiumStore();
+  const { premiumStatus, isLoading, checkPremiumStatus, cancelPremium } =
+    usePremiumStore();
   const [isMobile, setIsMobile] = useState(false);
+  const [cancellingSubscription, setCancellingSubscription] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<
+    "basic" | "standard" | "premium"
+  >("premium");
 
   useEffect(() => {
     const checkMobile = () => {
@@ -24,94 +75,51 @@ const PremiumPage = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const [selectedPlan, setSelectedPlan] = useState<string>("premium");
-  const [paymentDetails, setPaymentDetails] = useState({
-    cardNumber: "",
-    cardName: "",
-    expiry: "",
-    cvv: "",
-  });
-
-  const plans = [
-    {
-      id: "basic",
-      name: "Basic",
-      price: "₹49",
-      period: "1 Month",
-      features: [
-        "Ad-free music",
-        "Unlimited skips",
-        "Download up to 100 songs",
-      ],
-    },
-    {
-      id: "standard",
-      name: "Standard",
-      price: "₹199",
-      period: "6 Months",
-      features: [
-        "Ad-free music",
-        "Unlimited skips",
-        "High-quality audio",
-        "Download up to 100 songs",
-      ],
-    },
-    {
-      id: "premium",
-      name: "Premium",
-      price: "₹499",
-      period: "1 Year",
-      features: [
-        "Ad-free music",
-        "Unlimited skips",
-        "High-quality audio",
-        "Download up to 500 songs",
-        "Early access to new features",
-      ],
-    },
-  ];
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setPaymentDetails((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const handleSelectPlan = (planId: "basic" | "standard" | "premium") => {
+    console.log(
+      `Selected plan: ${planId} with price: ${
+        PLANS.find((p) => p.id === planId)?.price
+      }`
+    );
+    setSelectedPlan(planId);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePaymentSuccess = () => {
+    // Refresh premium status after successful payment
+    checkPremiumStatus();
 
-    // Validate form
-    if (
-      !paymentDetails.cardNumber ||
-      !paymentDetails.cardName ||
-      !paymentDetails.expiry ||
-      !paymentDetails.cvv
-    ) {
-      toast.error("Please fill in all payment details");
-      return;
-    }
+    // Redirect to home page after successful upgrade
+    setTimeout(() => navigate("/"), 1500);
+  };
 
-    // Simple validation for demo
-    if (paymentDetails.cardNumber.length < 16) {
-      toast.error("Please enter a valid card number");
-      return;
-    }
+  const handlePaymentFailure = (errorMessage: string) => {
+    console.error("Payment failed:", errorMessage);
+  };
 
-    toast.loading("Processing payment...", { id: "payment" });
+  const handleCancelSubscription = async () => {
+    setCancellingSubscription(true);
+    toast.loading("Cancelling subscription...", { id: "cancel-subscription" });
 
-    // Call API to upgrade to premium
-    const success = await upgradeToPremium("card", selectedPlan);
+    try {
+      const success = await cancelPremium();
 
-    if (success) {
-      toast.success("Successfully upgraded to premium!", { id: "payment" });
-      // Redirect to home page after successful upgrade
-      setTimeout(() => navigate("/"), 1500);
-    } else {
-      toast.error("Failed to process payment. Please try again.", {
-        id: "payment",
+      if (success) {
+        toast.success("Subscription cancelled successfully", {
+          id: "cancel-subscription",
+        });
+        checkPremiumStatus(); // Refresh the premium status
+      } else {
+        toast.error("Failed to cancel subscription", {
+          id: "cancel-subscription",
+        });
+      }
+    } catch (error) {
+      console.error("Error cancelling subscription:", error);
+      toast.error("Failed to cancel subscription", {
+        id: "cancel-subscription",
       });
+    } finally {
+      setCancellingSubscription(false);
     }
   };
 
@@ -152,7 +160,7 @@ const PremiumPage = () => {
                 )}
               </p>
 
-              <div className="flex justify-center">
+              <div className="flex flex-col sm:flex-row justify-center gap-3">
                 <Button
                   variant="outline"
                   className="border-zinc-700"
@@ -160,6 +168,43 @@ const PremiumPage = () => {
                 >
                   Continue Enjoying Premium
                 </Button>
+
+                {/* Subscription Cancellation Button with Alert Dialog */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      disabled={cancellingSubscription}
+                    >
+                      {cancellingSubscription
+                        ? "Cancelling..."
+                        : "Cancel Subscription"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="bg-zinc-900 border-zinc-800">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-white">
+                        Cancel Premium Subscription?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="text-zinc-400">
+                        Are you sure you want to cancel your premium
+                        subscription? You'll lose access to premium features at
+                        the end of your current billing period.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white">
+                        No, Keep It
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                        onClick={handleCancelSubscription}
+                      >
+                        Yes, Cancel
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           </div>
@@ -191,7 +236,7 @@ const PremiumPage = () => {
               isMobile ? "" : "md:grid-cols-3"
             } gap-4 mb-6`}
           >
-            {plans.map((plan) => (
+            {PLANS.map((plan) => (
               <div
                 key={plan.id}
                 className={`bg-zinc-800/50 rounded-xl p-4 md:p-6 border-2 transition-all cursor-pointer ${
@@ -199,7 +244,9 @@ const PremiumPage = () => {
                     ? "border-emerald-500"
                     : "border-transparent hover:border-zinc-700"
                 }`}
-                onClick={() => setSelectedPlan(plan.id)}
+                onClick={() =>
+                  handleSelectPlan(plan.id as "basic" | "standard" | "premium")
+                }
               >
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="text-lg md:text-xl font-bold">{plan.name}</h3>
@@ -229,75 +276,28 @@ const PremiumPage = () => {
             ))}
           </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="bg-zinc-800/50 rounded-xl p-4 md:p-6"
-          >
+          <div className="bg-zinc-800/50 rounded-xl p-4 md:p-6">
             <h2 className="text-lg md:text-xl font-bold mb-4">
-              Payment Details
+              Payment Method
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="space-y-2">
-                <Label htmlFor="cardName">Cardholder Name</Label>
-                <Input
-                  id="cardName"
-                  name="cardName"
-                  placeholder="John Doe"
-                  value={paymentDetails.cardName}
-                  onChange={handleInputChange}
-                  className="bg-zinc-700 border-zinc-600"
-                />
-              </div>
+            <div className="flex justify-center mb-4">
+              <p className="text-zinc-400 text-sm max-w-md text-center">
+                You will be redirected to Razorpay's secure payment gateway to
+                complete your payment.
+              </p>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="cardNumber">Card Number</Label>
-                <Input
-                  id="cardNumber"
-                  name="cardNumber"
-                  placeholder="4242 4242 4242 4242"
-                  value={paymentDetails.cardNumber}
-                  onChange={handleInputChange}
-                  className="bg-zinc-700 border-zinc-600"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="expiry">Expiry Date</Label>
-                <Input
-                  id="expiry"
-                  name="expiry"
-                  placeholder="MM/YY"
-                  value={paymentDetails.expiry}
-                  onChange={handleInputChange}
-                  className="bg-zinc-700 border-zinc-600"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cvv">CVV</Label>
-                <Input
-                  id="cvv"
-                  name="cvv"
-                  placeholder="123"
-                  value={paymentDetails.cvv}
-                  onChange={handleInputChange}
-                  className="bg-zinc-700 border-zinc-600"
+            <div className="flex justify-center">
+              <div className="w-full max-w-md">
+                <RazorpayCheckout
+                  tier={selectedPlan}
+                  onSuccess={handlePaymentSuccess}
+                  onFailure={handlePaymentFailure}
                 />
               </div>
             </div>
-
-            <div className="flex justify-end">
-              <Button
-                type="submit"
-                className="bg-emerald-600 hover:bg-emerald-700"
-                disabled={isLoading}
-              >
-                <CreditCard className="mr-2 h-4 w-4" />
-                {isLoading ? "Processing..." : "Subscribe Now"}
-              </Button>
-            </div>
-          </form>
+          </div>
         </div>
       </ScrollArea>
     </div>

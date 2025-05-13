@@ -34,10 +34,16 @@ export function useDebounceClick<T extends (...args: any[]) => any>(
         clearTimeout(timeoutRef.current);
       }
 
-      // Set a new timeout
-      timeoutRef.current = setTimeout(() => {
+      // For immediate actions like playback controls, execute immediately
+      // but still prevent double-clicks
+      if (delay <= 50) {
         callback(...args);
-      }, delay);
+      } else {
+        // Set a new timeout for less critical operations
+        timeoutRef.current = setTimeout(() => {
+          callback(...args);
+        }, delay);
+      }
     },
     [callback, delay, threshold]
   );

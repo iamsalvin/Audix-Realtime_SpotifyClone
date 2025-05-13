@@ -35,9 +35,8 @@ const LeftSidebar = () => {
 	console.log({ albums });
 
 	return (
-		<div className='h-full flex flex-col gap-2'>
+		<div className='h-full flex flex-col gap-2 overflow-hidden'>
 			{/* Navigation menu */}
-
 			<div className='rounded-lg bg-zinc-900 p-4'>
 				<div className='space-y-2'>
 					<Link
@@ -113,16 +112,16 @@ const LeftSidebar = () => {
 			</div>
 
 			{/* Library section */}
-			<div className='flex-1 rounded-lg bg-zinc-900 p-4'>
-				<div className='flex items-center justify-between mb-4'>
+			<div className='flex-1 rounded-lg bg-zinc-900 p-4 overflow-hidden flex flex-col min-h-0'>
+				<div className='flex items-center justify-between mb-4 flex-shrink-0'>
 					<div className='flex items-center text-white px-2'>
 						<Library className='size-5 mr-2' />
 						<span className='hidden md:inline'>Playlists</span>
 					</div>
 				</div>
 
-				<ScrollArea className='h-[calc(100vh-300px)]'>
-					<div className='space-y-2'>
+				<ScrollArea className='flex-1 min-h-0'>
+					<div className='space-y-2 pr-4'>
 						{isLoading ? (
 							<PlaylistSkeleton />
 						) : (

@@ -4,6 +4,7 @@ import Topbar from "../../components/Topbar";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { useLikedSongsStore } from "../../stores/useLikedSongsStore";
+import { usePremiumStore } from "../../stores/usePremiumStore";
 import { axiosInstance } from "../../lib/axios";
 import { Song } from "../../types";
 import {
@@ -59,11 +60,12 @@ const SongDetailsPage = () => {
     currentSong,
     isPlaying,
     play,
-    playNext: playerPlayNext,
-    playPrevious: playerPlayPrevious,
+    playNext,
+    playPrevious,
     togglePlay,
   } = usePlayerStore() as any;
   const { checkBulkLikeStatus } = useLikedSongsStore();
+  const { premiumStatus } = usePremiumStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Add error boundary
@@ -332,32 +334,58 @@ const SongDetailsPage = () => {
   // Handle next song
   const handleNext = () => {
     try {
-      const nextSong = playerPlayNext();
-      if (nextSong && nextSong._id) {
-        safeNavigate(`/songs/${nextSong._id}`);
-      } else {
-        // If nextSong is undefined or doesn't have an _id, go back to home
-        safeNavigate("/");
+      // Store the current song ID before calling playNext
+      const currentSongId = currentSong?._id;
+      
+      // Call playNext directly from the store
+      playNext();
+      
+      // Check if the user is premium
+      const isPremium = premiumStatus?.isPremium;
+      
+      // Only navigate if the user is premium or the popup isn't showing
+      if (isPremium) {
+        // For premium users, wait for the next song to be set before navigating
+        setTimeout(() => {
+          const nextSong = usePlayerStore.getState().currentSong;
+          // Only navigate if the song has actually changed and is valid
+          if (nextSong && nextSong._id && nextSong._id !== currentSongId) {
+            safeNavigate(`/songs/${nextSong._id}`);
+          }
+        }, 50);  // Shorter delay for better responsiveness
       }
+      // For non-premium users, don't navigate - let the premium popup handle it
     } catch (error) {
       console.error("Error playing next song:", error);
-      safeNavigate("/");
     }
   };
 
   // Handle previous song
   const handlePrevious = () => {
     try {
-      const previousSong = playerPlayPrevious();
-      if (previousSong && previousSong._id) {
-        safeNavigate(`/songs/${previousSong._id}`);
-      } else {
-        // If previousSong is undefined or doesn't have an _id, go back to home
-        safeNavigate("/");
+      // Store the current song ID before calling playPrevious
+      const currentSongId = currentSong?._id;
+      
+      // Call playPrevious directly from the store
+      playPrevious();
+      
+      // Check if the user is premium
+      const isPremium = premiumStatus?.isPremium;
+      
+      // Only navigate if the user is premium or the popup isn't showing
+      if (isPremium) {
+        // For premium users, wait for the previous song to be set before navigating
+        setTimeout(() => {
+          const prevSong = usePlayerStore.getState().currentSong;
+          // Only navigate if the song has actually changed and is valid
+          if (prevSong && prevSong._id && prevSong._id !== currentSongId) {
+            safeNavigate(`/songs/${prevSong._id}`);
+          }
+        }, 50);  // Shorter delay for better responsiveness
       }
+      // For non-premium users, don't navigate - let the premium popup handle it
     } catch (error) {
       console.error("Error playing previous song:", error);
-      safeNavigate("/");
     }
   };
 

@@ -13,7 +13,7 @@ interface VoiceAnnouncementProps {
  */
 const VoiceAnnouncement = ({
   duration = 5000,
-  audioUrl = "/audio/Voice for Audix.mp3", // Default audio file path
+  audioUrl = "/Voice Announcement/Voice for Audix.mp3", // Fixed path to the audio file
   onEnd,
 }: VoiceAnnouncementProps) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);

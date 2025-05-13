@@ -1,5 +1,6 @@
 import { Song } from "../models/song.model.js";
 import { Album } from "../models/album.model.js";
+import { User } from "../models/user.model.js";
 import cloudinary from "../lib/cloudinary.js";
 
 // helper function for cloudinary uploads with retry logic
@@ -181,4 +182,24 @@ export const deleteAlbum = async (req, res, next) => {
 
 export const checkAdmin = async (req, res, next) => {
 	res.status(200).json({ admin: true });
+};
+
+export const getAllUsers = async (req, res, next) => {
+	try {
+		// Find all users and include their subscription details
+		const users = await User.find({}).select(
+			"_id clerkId fullName email imageUrl isPremium premiumTier premiumSince premiumExpiresAt subscriptionId createdAt"
+		);
+
+		return res.status(200).json({
+			success: true,
+			users: users
+		});
+	} catch (error) {
+		console.error("Error fetching all users:", error);
+		res.status(500).json({ 
+			message: "Failed to fetch all users", 
+			error: error.message 
+		});
+	}
 };

@@ -19,6 +19,9 @@ const FriendsActivity = () => {
 		}
 	}, [fetchUsers, fetchPremiumUsers, user]);
 
+	// Create a Set of premium user ClerkIDs for faster lookup
+	const premiumUserIds = new Set(premiumUsers.map(user => user.clerkId));
+
 	return (
 		<div className='h-full bg-zinc-900 rounded-lg flex flex-col'>
 			<div className='p-4 flex justify-between items-center border-b border-zinc-800'>
@@ -58,7 +61,7 @@ const FriendsActivity = () => {
 									<div className='flex-1 min-w-0'>
 										<div className='flex items-center gap-2'>
 											<span className='font-medium text-sm text-white'>{user.fullName}</span>
-											{premiumUsers.includes(user.clerkId) && <PremiumBadge size="sm" />}
+											{premiumUserIds.has(user.clerkId) && <PremiumBadge size="sm" />}
 											{isPlaying && <Music className='size-3.5 text-emerald-400 shrink-0' />}
 										</div>
 

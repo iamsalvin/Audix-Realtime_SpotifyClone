@@ -20,6 +20,7 @@ import statRoutes from "./routes/stat.route.js";
 import likedSongRoutes from "./routes/likedSong.route.js";
 import userActivityRoutes from "./routes/userActivity.route.js";
 import premiumRoutes from "./routes/premium.route.js";
+import paymentRoutes from "./routes/payment.route.js";
 
 dotenv.config();
 
@@ -83,6 +84,7 @@ app.use("/api/stats", statRoutes);
 app.use("/api/liked-songs", likedSongRoutes);
 app.use("/api/activity", userActivityRoutes);
 app.use("/api/premium", premiumRoutes);
+app.use("/api/payments", paymentRoutes);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));

@@ -194,7 +194,7 @@ const PremiumPopup = ({
         <VoiceAnnouncement
           text="Welcome to Audix Premium! Experience uninterrupted music streaming with unlimited skips and ad-free listening. Upgrade now to unlock the full potential of your music journey."
           duration={5000}
-          audioUrl="/audio/Voice for Audix.mp3"
+          audioUrl="/Voice Announcement/Voice for Audix.mp3"
         />
       )}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl max-w-md w-full p-6 relative">

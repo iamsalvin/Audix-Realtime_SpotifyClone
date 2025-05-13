@@ -167,7 +167,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   },
 
   playNext: () => {
-    const { currentIndex, queue, isPlaying } = get();
+    const { currentIndex, queue, isPlaying, currentSong } = get();
 
     // Log previous song play
     get().logPlayActivity();
@@ -192,10 +192,11 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     const premiumStatus = usePremiumStore.getState().premiumStatus;
     const isPremium = premiumStatus?.isPremium || false;
 
-    // If not premium, show popup instead of playing next song
+    // Always show popup for non-premium users when skipping songs
+    // This ensures ads are displayed as requested
     if (!isPremium) {
       console.log(
-        "Non-premium user attempting to play next song, showing popup"
+        "Non-premium user skipping to next song, showing popup/ads"
       );
 
       set({
@@ -222,7 +223,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   },
 
   playPrevious: () => {
-    const { currentIndex, queue, isPlaying } = get();
+    const { currentIndex, queue, isPlaying, currentSong } = get();
 
     // Log previous song play
     get().logPlayActivity();
@@ -247,10 +248,11 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     const premiumStatus = usePremiumStore.getState().premiumStatus;
     const isPremium = premiumStatus?.isPremium || false;
 
-    // If not premium, show popup instead of playing next song
+    // Always show popup for non-premium users when using previous button
+    // This ensures ads are displayed as requested
     if (!isPremium) {
       console.log(
-        "Non-premium user attempting to play previous song, showing popup"
+        "Non-premium user using previous button, showing popup/ads"
       );
 
       set({

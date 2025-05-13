@@ -76,11 +76,15 @@ export const PlaybackControls = () => {
     if (now - lastInteractionRef.current < 300) return; // Prevent rapid clicks
     lastInteractionRef.current = now;
 
-    if (!isPremium && !isPlaying) {
-      // Navigate to chat page if user is not premium
+    // Only navigate non-premium users to chat if they're trying to start playing
+    // from a stopped state and there's no current song selected
+    if (!isPremium && !isPlaying && !currentSong) {
+      // Navigate to chat page if user is not premium and trying to start a new song
       navigateToChat();
       return;
     }
+    
+    // If user is already playing or pausing, just toggle the state
     togglePlay();
   }, 200);
 
@@ -89,24 +93,36 @@ export const PlaybackControls = () => {
     if (now - lastInteractionRef.current < 300) return;
     lastInteractionRef.current = now;
 
-    if (!isPremium) {
+    // Skip premium check if the user is already playing music
+    // This fixes the issue where premium users get redirected to chat when using next button
+    if (!isPremium && !currentSong) {
       navigateToChat();
       return;
     }
-    playNext();
-  }, 200);
+    
+    // Directly call playNext to ensure it works properly
+    if (playNext) {
+      playNext();
+    }
+  }, 50);
 
   const handlePrevious = debounce(() => {
     const now = Date.now();
     if (now - lastInteractionRef.current < 300) return;
     lastInteractionRef.current = now;
 
-    if (!isPremium) {
+    // Skip premium check if the user is already playing music
+    // This fixes the issue where premium users get redirected to chat when using previous button
+    if (!isPremium && !currentSong) {
       navigateToChat();
       return;
     }
-    playPrevious();
-  }, 200);
+    
+    // Directly call playPrevious to ensure it works properly
+    if (playPrevious) {
+      playPrevious();
+    }
+  }, 50);
 
   // Audio event handlers
   useEffect(() => {
@@ -131,10 +147,15 @@ export const PlaybackControls = () => {
       logPlayActivity();
       if (isPremium) {
         playNext();
-      } else {
-        // Update player state directly
+      } else if (!currentSong) {
+        // Only navigate to chat if there's no current song playing
+        // and the user is not premium
         usePlayerStore.setState({ isPlaying: false });
         navigateToChat();
+      } else {
+        // For non-premium users who already have a song playing,
+        // just stop playback without navigation
+        usePlayerStore.setState({ isPlaying: false });
       }
     };
 
@@ -315,7 +336,7 @@ export const PlaybackControls = () => {
             </Button>
 
             {/* Download button for premium users */}
-            {currentSong && isPremium && (
+            {currentSong && (
               <DownloadButton song={currentSong} className="hidden sm:flex" />
             )}
           </div>

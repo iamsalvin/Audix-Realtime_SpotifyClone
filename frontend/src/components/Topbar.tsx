@@ -1,4 +1,4 @@
-import { SignedOut, UserButton } from "@clerk/clerk-react";
+import { SignedOut, UserButton, useAuth } from "@clerk/clerk-react";
 import { LayoutDashboardIcon, Crown, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import SignInOAuthButtons from "./SignInOAuthButtons";
@@ -19,6 +19,7 @@ const Topbar = () => {
   const { isAdmin } = useAuthStore();
   const { premiumStatus, checkPremiumStatus } = usePremiumStore();
   const isPremium = premiumStatus?.isPremium || false;
+  const { isSignedIn } = useAuth();
 
   // Check premium status when component mounts
   useEffect(() => {
@@ -65,8 +66,8 @@ const Topbar = () => {
           <SignInOAuthButtons />
         </SignedOut>
 
-        {/* Premium upgrade button */}
-        {!isPremium && (
+        {/* Premium upgrade button - Only show when user is logged in and not premium */}
+        {isSignedIn && !isPremium && (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
