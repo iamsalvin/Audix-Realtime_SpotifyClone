@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend && npm run post-build",
     "post-build": "node scripts/post-build.js",
-    "start": "cross-env NODE_ENV=production npm run start --prefix backend"
+    "start": "npm run start --prefix backend"
   },
   "repository": {
     "type": "git",
@@ -20,7 +20,5 @@
     "url": "https://github.com/iamsalvin/Audix-Realtime_SpotifyClone/issues"
   },
   "homepage": "https://github.com/iamsalvin/Audix-Realtime_SpotifyClone#readme",
-  "dependencies": {
-    "cross-env": "^7.0.3"
-  }
+  "dependencies": {}
 }
